@@ -1,0 +1,79 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "workspace": {
+            "type": "String"
+        }
+    },
+    "resources": [
+        {
+            "id": "[concat(resourceId('Microsoft.OperationalInsights/workspaces/providers', parameters('workspace'), 'Microsoft.SecurityInsights'),'/alertRules/b66c791a-a7ce-4093-8a6e-e56b3e0130cd')]",
+            "name": "[concat(parameters('workspace'),'/Microsoft.SecurityInsights/b66c791a-a7ce-4093-8a6e-e56b3e0130cd')]",
+            "type": "Microsoft.OperationalInsights/workspaces/providers/alertRules",
+            "kind": "Scheduled",
+            "apiVersion": "2022-11-01-preview",
+            "properties": {
+                "displayName": "UC050137 - Failed login attempts in a short period of time",
+                "description": "",
+                "severity": "Medium",
+                "enabled": true,
+                "query": "let timeframe = 10m;\nlet threshold = 40;let Mango = view () {\nworkspace(\"4d082081-7c2a-4f57-b848-bd64e5c72859\").SecurityEvent \n| where TimeGenerated >= ago(timeframe)\n| where EventID == 4625 and LogonType !in (3,4,5)\n| where AccountType =~ \"User\"\n| summarize min(TimeGenerated), max(TimeGenerated), FailedLogonCount = count() by EventID, Activity, WorkstationName, Account, \nTargetAccount, TargetUserName, TargetDomainName, LogonType, LogonTypeName, LogonProcessName, Status, SubStatus\n| where FailedLogonCount >= threshold\n| project StartTimeUtc = min_TimeGenerated, EndTimeUtc = max_TimeGenerated, FailedLogonCount, EventID, Activity, WorkstationName, \nAccount, TargetAccount, TargetUserName, TargetDomainName, LogonType, LogonTypeName, LogonProcessName, Status, SubStatus\n| extend timestamp = StartTimeUtc, AccountCustomEntity = Account, HostCustomEntity = WorkstationName\n};\nunion withsource=\"TenantDetection\"  Mango\n\n",
+                "queryFrequency": "PT10M",
+                "queryPeriod": "PT10M",
+                "triggerOperator": "GreaterThan",
+                "triggerThreshold": 0,
+                "suppressionDuration": "PT5H",
+                "suppressionEnabled": false,
+                "tactics": [],
+                "techniques": [],
+                "alertRuleTemplateName": null,
+                "incidentConfiguration": {
+                    "createIncident": true,
+                    "groupingConfiguration": {
+                        "enabled": true,
+                        "reopenClosedIncident": false,
+                        "lookbackDuration": "P1D",
+                        "matchingMethod": "Selected",
+                        "groupByEntities": [
+                            "Host",
+                            "Account"
+                        ],
+                        "groupByAlertDetails": [],
+                        "groupByCustomDetails": [
+                            "Cliente"
+                        ]
+                    }
+                },
+                "eventGroupingSettings": {
+                    "aggregationKind": "SingleAlert"
+                },
+                "alertDetailsOverride": null,
+                "customDetails": {
+                    "Cliente": "TenantDetection"
+                },
+                "entityMappings": [
+                    {
+                        "entityType": "Account",
+                        "fieldMappings": [
+                            {
+                                "identifier": "FullName",
+                                "columnName": "AccountCustomEntity"
+                            }
+                        ]
+                    },
+                    {
+                        "entityType": "Host",
+                        "fieldMappings": [
+                            {
+                                "identifier": "FullName",
+                                "columnName": "HostCustomEntity"
+                            }
+                        ]
+                    }
+                ],
+                "sentinelEntitiesMappings": null
+            }
+        }
+    ]
+}
