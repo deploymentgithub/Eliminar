@@ -1,0 +1,88 @@
+{
+     "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+     "contentVersion": "1.0.0.0",
+     "parameters": {
+          "workspace": {
+               "type": "String",
+               "metadata": {
+                    "description": "Log Analytics Workspace Name"
+               }
+          }
+     },
+     "resources": [
+          {
+               "id": "[concat(resourceId('Microsoft.OperationalInsights/workspaces/providers', parameters('workspace'), 'Microsoft.SecurityInsights'),'/alertRules/02ddcebc-75b2-4edb-ae0d-dfdf8032ea62')]",
+               "name": "[concat(parameters('workspace'),'/Microsoft.SecurityInsights/02ddcebc-75b2-4edb-ae0d-dfdf8032ea62')]",
+               "type": "Microsoft.OperationalInsights/workspaces/providers/alertRules",
+               "kind": "Scheduled",
+               "properties": {
+                    "incidentConfiguration": {
+                         "createIncident": true,
+                         "groupingConfiguration": {
+                              "enabled": true,
+                              "reopenClosedIncident": false,
+                              "lookbackDuration": "P1D",
+                              "matchingMethod": "Selected",
+                              "groupByEntities": [
+                                   "Account",
+                                   "IP",
+                                   "Host"
+                              ],
+                              "groupByAlertDetails": [],
+                              "groupByCustomDetails": [
+                                   "Cliente"
+                              ]
+                         }
+                    },
+                    "customDetails": {
+                         "Cliente": "TenantDetection"
+                    },
+                    "entityMappings": [
+                         {
+                              "entityType": "Account",
+                              "fieldMappings": [
+                                   {
+                                        "identifier": "FullName",
+                                        "columnName": "AccountCustomEntity"
+                                   }
+                              ]
+                         },
+                         {
+                              "entityType": "Host",
+                              "fieldMappings": [
+                                   {
+                                        "identifier": "FullName",
+                                        "columnName": "HostCustomEntity"
+                                   }
+                              ]
+                         },
+                         {
+                              "entityType": "IP",
+                              "fieldMappings": [
+                                   {
+                                        "identifier": "Address",
+                                        "columnName": "IPCustomEntity"
+                                   }
+                              ]
+                         }
+                    ],
+                    "queryFrequency": "PT1H",
+                    "queryPeriod": "PT1H",
+                    "triggerOperator": "GreaterThan",
+                    "triggerThreshold": 0,
+                    "eventGroupingSettings": {
+                         "aggregationKind": "SingleAlert"
+                    },
+                    "severity": "Medium",
+                    "query": "let Mango = view () {\r\nworkspace(\"4d082081-7c2a-4f57-b848-bd64e5c72859\").SecurityEvent | where (CommandLine contains \"powershell\" and CommandLine contains \".DownloadFile\" and CommandLine contains \"System.Net.WebClient\")\r\n| extend AccountCustomEntity = AccountName\r\n| extend HostCustomEntity = Computer\r\n| extend IPCustomEntity = IpAddress\r\n};\r\nunion withsource=\"TenantDetection\"  Mango\r\n",
+                    "suppressionDuration": "PT5H",
+                    "suppressionEnabled": false,
+                    "tactics": [],
+                    "displayName": "UCS51004 - PowerShell DownloadFile",
+                    "enabled": false,
+                    "description": "",
+                    "alertRuleTemplateName": null
+               }
+          }
+     ]
+}
